@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from serializers.todo import todo_serializer, todos_serializer
 from serializers import todo as serializer
 from fastapi.encoders import jsonable_encoder
 from bson.objectid import ObjectId
@@ -21,26 +22,29 @@ class TodoCrud:
         todo = todo_collection.find_one({"_id": ObjectId(todo_id)})
         if not todo:
             raise HTTPException(status_code=404, detail="Todo with ID does not exist")
+        todo["id"] = str(todo.pop("_id"))
         return todo
     
     @staticmethod
     def list_todos():
-        return list(todo_collection.find())
+        todos = list(todo_collection.find())
+        return todos_serializer(todos)
     
     @staticmethod
-    def update_todos(todo_id: str, todo_data: TodoCreate):
-        db_todo = todo_collection.find_one({"_id": ObjectId(todo_id)})
-        if not db_todo:
-            raise HTTPException(status_code=404, detail="Todo with ID does not exist")
+    def update_todo(todo_id: str, todo_data: TodoCreate):
+        try:
+            object_id = ObjectId(todo_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid todo ID format")
 
         updated_todo = todo_collection.find_one_and_update(
-            {"_id": ObjectId(todo_id)},
-            {"$set": todo_data.model_dump()},
+            {"_id": object_id},
+            {"$set": {k: v for k, v in todo_data.model_dump().items() if v is not None}},
             return_document=ReturnDocument.AFTER
         )
 
         if not updated_todo:
-            raise HTTPException(status_code=500, detail="Failed to update todo")
+            raise HTTPException(status_code=404, detail="Todo with ID does not exist or update failed")
 
         return updated_todo
     

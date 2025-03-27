@@ -6,6 +6,13 @@ class TodoBase(BaseModel):
     description: str
     is_completed: bool
 
+class TodoRead(BaseModel):
+    id: str 
+    user_id: str
+    title: str
+    description: str
+    is_completed: bool
+
 class Todo(TodoBase):
     id: str
 
