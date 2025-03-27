@@ -31,19 +31,17 @@ class TodoCrud:
         return todos_serializer(todos)
     
     @staticmethod
-    def update_todo(todo_id: str, user_id: str, todo_data: TodoCreate):
-        todo_data = jsonable_encoder(todo_data)
-
-        result = todo_collection.update_one(
-            {"_id": ObjectId(todo_id), "user_id": user_id},  # Find todo by ID and user_id
-            {"$set": todo_data}  # Update fields
+    def update_todo(todo_id: str, todo_data: TodoCreate):
+        todo = todo_collection.find_one({"_id": ObjectId(todo_id)})
+        if not todo:
+            raise HTTPException(status_code=404, detail="Todo with ID does not exist")
+        
+        update_data = jsonable_encoder(todo_data.dict() if hasattr(todo_data, "dict") else todo_data.model_dump())
+        updated_todo = todo_collection.find_one_and_update(
+            {"_id": ObjectId(todo_id)},
+            {"$set": update_data},
+            return_document=ReturnDocument.AFTER
         )
-
-        if result.matched_count == 0:
-            return {"error": "Todo not found or not owned by the user"}
-
-        # Return the updated document
-        updated_todo = todo_collection.find_one({"_id": ObjectId(todo_id)})
         return serializer.todo_serializer(updated_todo)
     
     @staticmethod

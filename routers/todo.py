@@ -3,6 +3,7 @@ from bson.objectid import ObjectId
 from crud.todo import todo_crud
 from schemas import todo as todo_schema
 from serializers.todo import todos_serializer
+# from database import todo_collection
 
 router = APIRouter(prefix="/todo", tags=["Todos"])
 
@@ -25,18 +26,12 @@ def get_todo_endpoint(todo_id: str):
 def list_todos_endpoint():
     return todo_crud.list_todos()
 
-@router.put("/{todo_id}", response_model=todo_schema.Todo)
+@router.put("/{todo_id}")
 def update_todo_endpoint(
     todo_id: str, 
-    todo_data: todo_crud.update_todo
+    todo_data: todo_schema.TodoCreate,
 ):
-    user_id = user_id["id"]  # Extract user ID
-
-    updated_todo = todo_crud.update_todo(todo_id, user_id, todo_data)
-    
-    if "error" in updated_todo:
-        raise HTTPException(status_code=404, detail=updated_todo["error"])
-
+    updated_todo = todo_crud.update_todo(todo_id, todo_data)
     return updated_todo
 
 @router.delete("/{todo_id}")
