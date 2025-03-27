@@ -1,40 +1,35 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from bson.objectid import ObjectId
 from crud.user import user_crud
 from schemas import user as user_schema
 
 router = APIRouter(prefix="/user", tags=["Users"])
 
-@router.post("/")
+@router.post("/", response_model=user_schema.UserRead)
 def create_user_endpoint(user: user_schema.UserCreate):
     return user_crud.create_user(user)
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session
-from database import get_session
-from models import UserCreate, UserRead
-from crud.user import user_crud
-from uuid import UUID
+@router.get("/{user_id}", response_model=user_schema.UserRead)
+def get_user_endpoint(user_id: str):
+    if not ObjectId.is_valid(user_id):
+        raise HTTPException(status_code=400, detail="Invalid User ID format")
 
-router = APIRouter(prefix="/users", tags=["Users"])
-
-@router.post("/", response_model=UserRead)
-def create_user_endpoint(user: UserCreate, db: Session = Depends(get_session)):
-    return user_crud.create_user(db, user)
-
-@router.get("/{user_id}", response_model=UserRead)
-def get_user_endpoint(user_id: UUID, db: Session = Depends(get_session)):
-    user = user_crud.get_user(db, user_id)
+    user = user_crud.get_user(user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found!")
+        raise HTTPException(status_code=404, detail="User not found")
+    
     return user
 
-@router.get("/", response_model=list[UserRead])
-def list_users_endpoint(db: Session = Depends(get_session)):
-    return user_crud.list_users(db)
+@router.get("/", response_model=list[user_schema.UserRead])
+def list_users_endpoint():
+    return user_crud.list_users()
 
 @router.delete("/{user_id}")
-def delete_user_endpoint(user_id: UUID, db: Session = Depends(get_session)):
-    if not user_crud.delete_user(db, user_id):
-        raise HTTPException(status_code=404, detail="User not found!")
-    return {"message": "User deleted successfully!"}
+def delete_user_endpoint(user_id: str):
+    if not ObjectId.is_valid(user_id):
+        raise HTTPException(status_code=400, detail="Invalid User ID format")
 
+    if not user_crud.delete_user(user_id):
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": "User deleted successfully"}
