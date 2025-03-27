@@ -1,7 +1,7 @@
 from serializers import todo as serializer
-from fastapi.encorders import jsonable_encoder
+from fastapi.encoders import jsonable_encoder
 from bson.objectid import ObjectId
-from todoapp_mongo.schemas.todo import TodoCreate
+from schemas.todo import TodoCreate
 from database import todo_collection
 
 class TodoCrud:

@@ -6,3 +6,5 @@ def todo_serializer(todo_document) -> dict:
         "description": todo_document.get("description"),
         "is_completed": todo_document.get("is_completed"),
     }
+def todos_serializer(todos_documents) -> list:
+    return [todo_serializer(todo) for todo in todos_documents]
