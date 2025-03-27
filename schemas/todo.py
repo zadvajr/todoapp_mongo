@@ -1,14 +1,13 @@
-from uuid import UUID
 from pydantic import BaseModel
 
 class TodoBase(BaseModel):
-    user_id: UUID
+    user_id: str
     title: str
     description: str
     is_completed: bool
 
 class Todo(TodoBase):
-    id: UUID
+    id: str
 
 class TodoCreate(TodoBase):
     is_completed: bool = False
