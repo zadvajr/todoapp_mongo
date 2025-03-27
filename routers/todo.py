@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from bson.objectid import ObjectId
 from crud.todo import todo_crud
 from schemas import todo as todo_schema
@@ -26,14 +26,17 @@ def list_todos_endpoint():
     return todo_crud.list_todos()
 
 @router.put("/{todo_id}", response_model=todo_schema.Todo)
-def update_todo_endpoint(todo_id: str, todo: todo_schema.TodoCreate):
-    if not ObjectId.is_valid(todo_id):
-        raise HTTPException(status_code=400, detail="Invalid Todo ID format")
+def update_todo_endpoint(
+    todo_id: str, 
+    todo_data: todo_crud.update_todo
+):
+    user_id = user_id["id"]  # Extract user ID
 
-    updated_todo = todo_crud.update_todo(todo_id, todo)
-    if not updated_todo:
-        raise HTTPException(status_code=404, detail="Todo not found")
+    updated_todo = todo_crud.update_todo(todo_id, user_id, todo_data)
     
+    if "error" in updated_todo:
+        raise HTTPException(status_code=404, detail=updated_todo["error"])
+
     return updated_todo
 
 @router.delete("/{todo_id}")

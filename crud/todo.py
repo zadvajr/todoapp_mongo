@@ -31,22 +31,20 @@ class TodoCrud:
         return todos_serializer(todos)
     
     @staticmethod
-    def update_todo(todo_id: str, todo_data: TodoCreate):
-        try:
-            object_id = ObjectId(todo_id)
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid todo ID format")
+    def update_todo(todo_id: str, user_id: str, todo_data: TodoCreate):
+        todo_data = jsonable_encoder(todo_data)
 
-        updated_todo = todo_collection.find_one_and_update(
-            {"_id": object_id},
-            {"$set": {k: v for k, v in todo_data.model_dump().items() if v is not None}},
-            return_document=ReturnDocument.AFTER
+        result = todo_collection.update_one(
+            {"_id": ObjectId(todo_id), "user_id": user_id},  # Find todo by ID and user_id
+            {"$set": todo_data}  # Update fields
         )
 
-        if not updated_todo:
-            raise HTTPException(status_code=404, detail="Todo with ID does not exist or update failed")
+        if result.matched_count == 0:
+            return {"error": "Todo not found or not owned by the user"}
 
-        return updated_todo
+        # Return the updated document
+        updated_todo = todo_collection.find_one({"_id": ObjectId(todo_id)})
+        return serializer.todo_serializer(updated_todo)
     
     @staticmethod
     def delete_todo(todo_id: str):
