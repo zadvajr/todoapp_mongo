@@ -4,6 +4,7 @@ from fastapi.encoders import jsonable_encoder
 from bson.objectid import ObjectId
 from schemas.todo import TodoCreate, Todo
 from database import todo_collection
+from pymongo import ReturnDocument
 
 class TodoCrud:
 
@@ -17,7 +18,7 @@ class TodoCrud:
     
     @staticmethod
     def get_todo(todo_id: str):
-        todo = todo_collection.find_one({"_id": todo_id})
+        todo = todo_collection.find_one({"_id": ObjectId(todo_id)})
         if not todo:
             raise HTTPException(status_code=404, detail="Todo with ID does not exist")
         return todo
@@ -28,23 +29,31 @@ class TodoCrud:
     
     @staticmethod
     def update_todos(todo_id: str, todo_data: TodoCreate):
-        db_todo = todo_collection.find_one({"_id": todo_id})
+        db_todo = todo_collection.find_one({"_id": ObjectId(todo_id)})
         if not db_todo:
-            raise HTTPException(status_code=400, detail="Todo with ID does not exist")
+            raise HTTPException(status_code=404, detail="Todo with ID does not exist")
+
         updated_todo = todo_collection.find_one_and_update(
-            {"_id": todo_id}, {"$set": todo_data.model_dump()}, 
+            {"_id": ObjectId(todo_id)},
+            {"$set": todo_data.model_dump()},
             return_document=ReturnDocument.AFTER
         )
+
+        if not updated_todo:
+            raise HTTPException(status_code=500, detail="Failed to update todo")
+
         return updated_todo
     
     @staticmethod
     def delete_todo(todo_id: str):
-        todo = todo_collection.find_one({"_id":todo_id})
+        todo = todo_collection.find_one({"_id": ObjectId(todo_id)})
         if not todo:
             raise HTTPException(status_code=404, detail="Todo with ID does not exist")
-        deleted_todo = todo_collection.delete_one({"_id": todo_id})
+
+        deleted_todo = todo_collection.delete_one({"_id": ObjectId(todo_id)})
         if deleted_todo.deleted_count == 0:
-            raise HTTPException(status_code=500, detail="Failed to delete todo")  # Ensure deletion happened
+            raise HTTPException(status_code=500, detail="Failed to delete todo")
+
         return {"message": "Todo deleted successfully"}
 
     @staticmethod
